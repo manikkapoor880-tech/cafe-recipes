@@ -1,0 +1,536 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Cafe Manager</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"/>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@500;700&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet"/>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#0f0e0d;--surface:#1a1917;--surface2:#242220;--surface3:#2e2c29;
+  --border:rgba(255,255,255,0.07);--border2:rgba(255,255,255,0.13);
+  --text:#f0ede8;--muted:#9a9590;--faint:#4a4845;
+  --kitchen:#c8a96e;--kitchen-bg:rgba(200,169,110,0.1);--kitchen-border:rgba(200,169,110,0.25);
+  --bakery:#a8c4a0;--bakery-bg:rgba(168,196,160,0.1);--bakery-border:rgba(168,196,160,0.25);
+  --admin:#9db8d4;--admin-bg:rgba(157,184,212,0.1);
+  --danger:#d4706a;--success:#7ab87a;
+  --ff:'DM Sans',sans-serif;--fd:'Playfair Display',serif;
+  --r:12px;--rsm:8px;--rlg:16px;
+}
+body{font-family:var(--ff);background:var(--bg);color:var(--text);min-height:100vh;font-size:14px;line-height:1.6}
+#login-screen{min-height:100vh;display:flex;align-items:center;justify-content:center;padding:24px}
+.login-box{width:100%;max-width:380px;background:var(--surface);border:0.5px solid var(--border2);border-radius:var(--rlg);padding:40px 36px}
+.login-logo{font-family:var(--fd);font-size:26px;font-weight:700;margin-bottom:6px;letter-spacing:-0.5px}
+.login-sub{font-size:13px;color:var(--muted);margin-bottom:32px}
+.field{margin-bottom:16px}
+.field label{display:block;font-size:11px;font-weight:500;color:var(--muted);margin-bottom:6px;letter-spacing:0.05em;text-transform:uppercase}
+.field input,.field select{width:100%;background:var(--surface2);border:0.5px solid var(--border2);border-radius:var(--rsm);padding:10px 14px;font-size:14px;color:var(--text);font-family:var(--ff);outline:none;transition:border-color 0.15s}
+.field input:focus{border-color:var(--kitchen)}
+.field select option{background:var(--surface2)}
+.btn-primary{width:100%;background:var(--kitchen);border:none;border-radius:var(--rsm);padding:11px;font-size:14px;font-weight:500;color:#0f0e0d;cursor:pointer;font-family:var(--ff);margin-top:8px;transition:opacity 0.15s}
+.btn-primary:hover{opacity:0.88}
+.login-hint{margin-top:20px;padding:14px;background:var(--surface2);border-radius:var(--rsm);font-size:12px;color:var(--muted);line-height:1.9}
+.login-hint strong{color:var(--text)}
+#app{display:none;min-height:100vh}
+.topbar{display:flex;align-items:center;justify-content:space-between;padding:0 24px;height:56px;background:var(--surface);border-bottom:0.5px solid var(--border);position:sticky;top:0;z-index:100}
+.topbar-logo{font-family:var(--fd);font-size:18px;font-weight:700;letter-spacing:-0.3px}
+.topbar-right{display:flex;align-items:center;gap:12px}
+.role-badge{font-size:11px;font-weight:500;letter-spacing:0.06em;text-transform:uppercase;padding:4px 10px;border-radius:100px}
+.role-kitchen{background:var(--kitchen-bg);color:var(--kitchen);border:0.5px solid var(--kitchen-border)}
+.role-bakery{background:var(--bakery-bg);color:var(--bakery);border:0.5px solid var(--bakery-border)}
+.role-admin{background:var(--admin-bg);color:var(--admin);border:0.5px solid rgba(157,184,212,0.25)}
+.logout-btn{background:none;border:0.5px solid var(--border2);border-radius:var(--rsm);padding:6px 12px;font-size:12px;color:var(--muted);cursor:pointer;font-family:var(--ff);transition:all 0.15s}
+.logout-btn:hover{border-color:var(--danger);color:var(--danger)}
+.nav-tabs{display:flex;gap:2px;padding:16px 24px 0;border-bottom:0.5px solid var(--border)}
+.nav-tab{background:none;border:none;padding:10px 16px;font-size:13px;font-weight:500;color:var(--muted);cursor:pointer;font-family:var(--ff);border-bottom:2px solid transparent;margin-bottom:-0.5px;transition:all 0.15s}
+.nav-tab:hover{color:var(--text)}
+.nav-tab.active{color:var(--text)}
+.nav-tab.active.kt{border-bottom-color:var(--kitchen)}
+.nav-tab.active.bt{border-bottom-color:var(--bakery)}
+.nav-tab.active.at{border-bottom-color:var(--admin)}
+.main{padding:24px;max-width:1100px;margin:0 auto}
+.page{display:none}
+.page.active{display:block}
+.sec-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:20px}
+.sec-title{font-family:var(--fd);font-size:22px;font-weight:500}
+.sec-title span{font-size:13px;font-weight:400;font-family:var(--ff);color:var(--muted);margin-left:8px}
+.add-btn{display:flex;align-items:center;gap:6px;background:var(--kitchen);border:none;border-radius:var(--rsm);padding:9px 16px;font-size:13px;font-weight:500;color:#0f0e0d;cursor:pointer;font-family:var(--ff);transition:opacity 0.15s}
+.add-btn:hover{opacity:0.88}
+.add-btn.bk{background:var(--bakery)}
+.search-bar{margin-bottom:18px}
+.search-input{width:100%;max-width:360px;background:var(--surface);border:0.5px solid var(--border2);border-radius:var(--rsm);padding:9px 14px;font-size:13px;color:var(--text);font-family:var(--ff);outline:none;transition:border-color 0.15s}
+.search-input:focus{border-color:var(--kitchen)}
+.recipe-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(230px,1fr));gap:16px}
+.recipe-card{background:var(--surface);border:0.5px solid var(--border);border-radius:var(--rlg);overflow:hidden;cursor:pointer;transition:border-color 0.15s,transform 0.15s}
+.recipe-card:hover{border-color:var(--border2);transform:translateY(-2px)}
+.card-img-wrap{width:100%;height:180px;background:var(--surface2);display:flex;align-items:center;justify-content:center;overflow:hidden}
+.card-img-wrap img{width:100%;height:100%;object-fit:cover}
+.card-img-wrap .card-icon{font-size:36px;color:var(--faint)}
+.card-body{padding:14px}
+.card-name{font-family:var(--fd);font-size:15px;font-weight:500;margin-bottom:4px}
+.card-meta{font-size:12px;color:var(--muted);display:flex;gap:8px;flex-wrap:wrap}
+.card-tag{font-size:10px;padding:2px 8px;border-radius:100px;margin-top:8px;display:inline-block}
+.tk{background:var(--kitchen-bg);color:var(--kitchen)}
+.tb{background:var(--bakery-bg);color:var(--bakery)}
+.empty-state{grid-column:1/-1;text-align:center;padding:60px 24px;color:var(--muted)}
+.empty-icon{font-size:40px;margin-bottom:12px;opacity:0.4}
+.empty-title{font-size:16px;color:var(--text);margin-bottom:4px}
+.modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,0.72);z-index:200;display:none;align-items:flex-start;justify-content:center;padding:24px;overflow-y:auto}
+.modal-overlay.open{display:flex}
+.modal{background:var(--surface);border:0.5px solid var(--border2);border-radius:var(--rlg);width:100%;max-width:680px;margin:auto}
+.modal-head{display:flex;align-items:center;justify-content:space-between;padding:18px 22px;border-bottom:0.5px solid var(--border)}
+.modal-title{font-family:var(--fd);font-size:20px;font-weight:500}
+.modal-close{background:none;border:none;color:var(--muted);cursor:pointer;font-size:22px;line-height:1;padding:2px 6px}
+.modal-close:hover{color:var(--text)}
+.modal-body{padding:22px;max-height:72vh;overflow-y:auto}
+.modal-foot{padding:14px 22px;border-top:0.5px solid var(--border);display:flex;gap:10px;justify-content:flex-end;align-items:center}
+.form-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+.ff{margin-bottom:12px}
+.ff.full{grid-column:1/-1}
+.fl{display:block;font-size:11px;font-weight:500;color:var(--muted);margin-bottom:5px;letter-spacing:0.05em;text-transform:uppercase}
+.fi,.ft,.fs{width:100%;background:var(--surface2);border:0.5px solid var(--border2);border-radius:var(--rsm);padding:8px 11px;font-size:13px;color:var(--text);font-family:var(--ff);outline:none;transition:border-color 0.15s}
+.fi:focus,.ft:focus{border-color:var(--kitchen)}
+.ft{resize:vertical;min-height:76px;line-height:1.6}
+.fs option{background:var(--surface2)}
+.img-zone{border:1.5px dashed var(--border2);border-radius:var(--r);padding:18px;text-align:center;cursor:pointer;transition:border-color 0.15s;position:relative;overflow:hidden}
+.img-zone:hover{border-color:var(--kitchen)}
+.img-zone input{position:absolute;inset:0;opacity:0;cursor:pointer;width:100%;height:100%}
+.img-prev{width:100%;max-height:200px;object-fit:cover;border-radius:var(--rsm);margin-top:10px;display:none}
+.img-lbl{font-size:13px;color:var(--muted);pointer-events:none}
+.ing-tbl{width:100%;border-collapse:collapse;margin-top:6px}
+.ing-tbl th{font-size:10px;font-weight:500;color:var(--muted);text-align:left;padding:3px 6px 7px;letter-spacing:0.05em;text-transform:uppercase}
+.ing-tbl td{padding:3px 3px}
+.ing-tbl tr+tr td{border-top:0.5px solid var(--border)}
+.ic{width:100%;background:var(--surface2);border:0.5px solid transparent;border-radius:6px;padding:6px 8px;font-size:13px;color:var(--text);font-family:var(--ff);outline:none;transition:border-color 0.15s}
+.ic:focus{border-color:var(--kitchen)}
+.del-r{background:none;border:none;color:var(--faint);cursor:pointer;font-size:16px;padding:3px 5px;border-radius:4px;transition:color 0.15s}
+.del-r:hover{color:var(--danger)}
+.add-row{display:flex;align-items:center;gap:5px;background:none;border:0.5px solid var(--border2);border-radius:var(--rsm);padding:5px 11px;font-size:12px;color:var(--muted);cursor:pointer;font-family:var(--ff);transition:all 0.15s;margin-top:7px}
+.add-row:hover{border-color:var(--kitchen);color:var(--kitchen)}
+.step-item{display:flex;gap:9px;align-items:flex-start;margin-bottom:7px}
+.step-num{width:22px;height:22px;border-radius:50%;background:var(--surface3);display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:500;color:var(--muted);flex-shrink:0;margin-top:7px}
+.step-ta{flex:1;background:var(--surface2);border:0.5px solid var(--border2);border-radius:var(--rsm);padding:7px 10px;font-size:13px;color:var(--text);font-family:var(--ff);outline:none;resize:none;min-height:36px;overflow:hidden;transition:border-color 0.15s;line-height:1.5}
+.step-ta:focus{border-color:var(--kitchen)}
+.btn-sec{background:none;border:0.5px solid var(--border2);border-radius:var(--rsm);padding:8px 16px;font-size:13px;font-weight:500;color:var(--text);cursor:pointer;font-family:var(--ff);transition:all 0.15s}
+.btn-sec:hover{background:var(--surface2)}
+.btn-save{background:var(--kitchen);border:none;border-radius:var(--rsm);padding:8px 20px;font-size:13px;font-weight:500;color:#0f0e0d;cursor:pointer;font-family:var(--ff);transition:opacity 0.15s}
+.btn-save:hover{opacity:0.88}
+.btn-save.bk{background:var(--bakery)}
+.btn-del{background:none;border:0.5px solid var(--danger);border-radius:var(--rsm);padding:7px 13px;font-size:12px;color:var(--danger);cursor:pointer;font-family:var(--ff);transition:all 0.15s}
+.btn-del:hover{background:rgba(212,112,106,0.1)}
+.det-img{width:100%;max-height:300px;object-fit:cover;border-radius:var(--r);margin-bottom:18px;display:none}
+.det-meta{display:grid;grid-template-columns:repeat(auto-fit,minmax(90px,1fr));gap:8px;margin-bottom:18px}
+.det-mc{background:var(--surface2);border-radius:var(--rsm);padding:9px 11px;text-align:center}
+.det-ml{font-size:10px;font-weight:500;color:var(--muted);letter-spacing:0.06em;text-transform:uppercase;margin-bottom:3px}
+.det-mv{font-size:13px;font-weight:500}
+.det-sec{margin-bottom:18px}
+.det-sl{font-size:10px;font-weight:500;color:var(--muted);letter-spacing:0.07em;text-transform:uppercase;margin-bottom:9px}
+.det-ing{width:100%;border-collapse:collapse;font-size:13px}
+.det-ing th{text-align:left;font-size:10px;color:var(--muted);padding:3px 8px 7px;letter-spacing:0.05em;text-transform:uppercase}
+.det-ing td{padding:6px 8px;border-top:0.5px solid var(--border)}
+.det-step{display:flex;gap:10px;margin-bottom:10px;align-items:flex-start}
+.det-sn{width:22px;height:22px;border-radius:50%;background:var(--surface3);display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:500;color:var(--muted);flex-shrink:0}
+.det-st{font-size:14px;line-height:1.6;padding-top:2px}
+.det-notes{background:var(--surface2);border-radius:var(--rsm);padding:13px;font-size:13px;line-height:1.7}
+.ai-box{background:var(--surface2);border:0.5px solid var(--border2);border-radius:var(--r);padding:16px;margin-top:16px}
+.ai-title{font-size:12px;font-weight:500;color:var(--muted);margin-bottom:8px}
+.ai-resp{font-size:13px;line-height:1.7;color:var(--text);white-space:pre-wrap;min-height:36px}
+.ai-row{display:flex;gap:8px;margin-top:10px}
+.ai-in{flex:1;background:var(--surface);border:0.5px solid var(--border2);border-radius:var(--rsm);padding:7px 11px;font-size:13px;color:var(--text);font-family:var(--ff);outline:none}
+.ai-in:focus{border-color:var(--kitchen)}
+.ai-btn{background:none;border:0.5px solid var(--kitchen);color:var(--kitchen);border-radius:var(--rsm);padding:7px 13px;font-size:12px;cursor:pointer;font-family:var(--ff);white-space:nowrap;transition:all 0.15s}
+.ai-btn:hover{background:var(--kitchen-bg)}
+.dot{display:inline-block;width:5px;height:5px;border-radius:50%;background:var(--kitchen);animation:blink 0.8s infinite}
+@keyframes blink{0%,100%{opacity:0.2}50%{opacity:1}}
+.stats-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px;margin-bottom:26px}
+.stat-card{background:var(--surface);border:0.5px solid var(--border);border-radius:var(--r);padding:15px 17px}
+.stat-lbl{font-size:10px;font-weight:500;color:var(--muted);letter-spacing:0.06em;text-transform:uppercase;margin-bottom:5px}
+.stat-val{font-size:26px;font-weight:500;font-family:var(--fd)}
+.sv-k{color:var(--kitchen)} .sv-b{color:var(--bakery)}
+.admin-list{display:flex;flex-direction:column;gap:9px}
+.admin-row{display:flex;align-items:center;gap:13px;background:var(--surface);border:0.5px solid var(--border);border-radius:var(--r);padding:11px 15px;transition:border-color 0.15s}
+.admin-row:hover{border-color:var(--border2)}
+.admin-thumb{width:46px;height:46px;border-radius:8px;object-fit:cover;background:var(--surface2);flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:20px;color:var(--faint);overflow:hidden}
+.admin-thumb img{width:100%;height:100%;object-fit:cover}
+.admin-info{flex:1;min-width:0}
+.admin-name{font-weight:500;font-size:14px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.admin-by{font-size:11px;color:var(--muted);margin-top:2px}
+.adel{background:none;border:0.5px solid var(--border2);border-radius:var(--rsm);padding:5px 10px;font-size:11px;color:var(--muted);cursor:pointer;font-family:var(--ff);transition:all 0.15s}
+.adel:hover{border-color:var(--danger);color:var(--danger)}
+#toast{position:fixed;bottom:24px;right:24px;background:var(--surface2);border:0.5px solid var(--border2);border-radius:var(--rsm);padding:11px 17px;font-size:13px;z-index:500;opacity:0;transform:translateY(8px);transition:all 0.2s;pointer-events:none}
+#toast.show{opacity:1;transform:translateY(0)}
+</style>
+</head>
+<body>
+
+<div id="login-screen">
+  <div class="login-box">
+    <div class="login-logo">Cafe Manager</div>
+    <div class="login-sub">Staff Recipe System</div>
+    <div class="field"><label>Staff ID</label><input type="text" id="lid" placeholder="Enter your staff ID" autocomplete="off"/></div>
+    <div class="field"><label>Password</label><input type="password" id="lpass" placeholder="Enter password"/></div>
+    <button class="btn-primary" onclick="doLogin()">Sign In</button>
+    <div class="login-hint">
+      <strong>Demo accounts:</strong><br>
+      Kitchen: <strong>KID001</strong> / <strong>kitchen123</strong><br>
+      Bakery: &nbsp;<strong>BID001</strong> / <strong>bakery123</strong><br>
+      Admin: &nbsp;&nbsp;<strong>ADMIN</strong> / <strong>admin123</strong>
+    </div>
+  </div>
+</div>
+
+<div id="app">
+  <div class="topbar">
+    <div class="topbar-logo">Cafe Manager</div>
+    <div class="topbar-right">
+      <span id="rbadge" class="role-badge"></span>
+      <span id="uname" style="font-size:13px;color:var(--muted)"></span>
+      <button class="logout-btn" onclick="doLogout()">Sign out</button>
+    </div>
+  </div>
+  <div class="nav-tabs" id="nav-tabs"></div>
+  <div class="main">
+    <div id="page-kitchen" class="page">
+      <div class="sec-header">
+        <div class="sec-title">Kitchen Recipes <span id="kc"></span></div>
+        <button class="add-btn" onclick="openAdd('kitchen')">+ Add Recipe</button>
+      </div>
+      <div class="search-bar"><input class="search-input" placeholder="Search kitchen recipes..." oninput="renderGrid('kitchen',this.value)"/></div>
+      <div class="recipe-grid" id="grid-kitchen"></div>
+    </div>
+    <div id="page-bakery" class="page">
+      <div class="sec-header">
+        <div class="sec-title">Bakery Recipes <span id="bc"></span></div>
+        <button class="add-btn bk" onclick="openAdd('bakery')">+ Add Recipe</button>
+      </div>
+      <div class="search-bar"><input class="search-input" placeholder="Search bakery recipes..." oninput="renderGrid('bakery',this.value)"/></div>
+      <div class="recipe-grid" id="grid-bakery"></div>
+    </div>
+    <div id="page-admin" class="page">
+      <div class="sec-header"><div class="sec-title">Admin Panel</div></div>
+      <div class="stats-grid" id="sgrid"></div>
+      <div style="font-family:var(--fd);font-size:17px;margin-bottom:13px">All Recipes</div>
+      <div class="admin-list" id="alist"></div>
+    </div>
+  </div>
+</div>
+
+<!-- ADD/EDIT MODAL -->
+<div class="modal-overlay" id="add-modal">
+  <div class="modal">
+    <div class="modal-head">
+      <div class="modal-title" id="modal-ttl">Add Recipe</div>
+      <button class="modal-close" onclick="closeM('add-modal')">×</button>
+    </div>
+    <div class="modal-body">
+      <div class="form-grid">
+        <div class="ff full"><label class="fl">Dish Name *</label><input class="fi" id="fn" placeholder="e.g. Chicken Tikka Masala"/></div>
+        <div class="ff full">
+          <label class="fl">Dish Photo</label>
+          <div class="img-zone" id="imgzone">
+            <input type="file" accept="image/*" onchange="handleImg(this)" id="imgfile"/>
+            <div class="img-lbl" id="imglbl">Click or drag to upload dish photo</div>
+            <img class="img-prev" id="imgprev"/>
+          </div>
+        </div>
+        <div class="ff"><label class="fl">Yield</label><input class="fi" id="fyield" placeholder="e.g. 4 portions"/></div>
+        <div class="ff"><label class="fl">Portion Size</label><input class="fi" id="fportion" placeholder="e.g. 250g"/></div>
+        <div class="ff"><label class="fl">Prep Time</label><input class="fi" id="fprep" placeholder="e.g. 20 min"/></div>
+        <div class="ff"><label class="fl">Cook Time</label><input class="fi" id="fcook" placeholder="e.g. 35 min"/></div>
+        <div class="ff"><label class="fl">Cost / Portion</label><input class="fi" id="fcost" placeholder="e.g. Rs. 180"/></div>
+        <div class="ff"><label class="fl">Category</label><input class="fi" id="fcat" placeholder="e.g. Main Course"/></div>
+        <div class="ff full">
+          <label class="fl">Ingredients</label>
+          <table class="ing-tbl">
+            <thead><tr><th style="width:36%">Ingredient</th><th style="width:17%">Qty</th><th style="width:18%">Unit</th><th style="width:22%">Notes</th><th style="width:7%"></th></tr></thead>
+            <tbody id="ibody"></tbody>
+          </table>
+          <button class="add-row" onclick="addIng()">+ Add ingredient</button>
+        </div>
+        <div class="ff full">
+          <label class="fl">Preparation Steps</label>
+          <div id="slist"></div>
+          <button class="add-row" onclick="addStep()">+ Add step</button>
+        </div>
+        <div class="ff full"><label class="fl">Plating & Presentation</label><textarea class="ft" id="fplating" placeholder="How should this be plated and served?"></textarea></div>
+        <div class="ff full"><label class="fl">Chef's Notes</label><textarea class="ft" id="fnotes" placeholder="Storage, allergens, variations, quality standards..."></textarea></div>
+      </div>
+    </div>
+    <div class="modal-foot">
+      <button class="btn-sec" onclick="closeM('add-modal')">Cancel</button>
+      <button class="btn-save" id="savebtn" onclick="saveRecipe()">Save Recipe</button>
+    </div>
+  </div>
+</div>
+
+<!-- VIEW MODAL -->
+<div class="modal-overlay" id="view-modal">
+  <div class="modal" style="max-width:700px">
+    <div class="modal-head">
+      <div class="modal-title" id="vttl"></div>
+      <button class="modal-close" onclick="closeM('view-modal')">×</button>
+    </div>
+    <div class="modal-body" id="vbody"></div>
+    <div class="modal-foot" id="vfoot"></div>
+  </div>
+</div>
+
+<div id="toast"></div>
+
+<script>
+const USERS={
+  'KID001':{pass:'kitchen123',role:'kitchen',name:'Kitchen Staff 1'},
+  'KID002':{pass:'kitchen456',role:'kitchen',name:'Kitchen Staff 2'},
+  'BID001':{pass:'bakery123', role:'bakery', name:'Bakery Staff 1'},
+  'BID002':{pass:'bakery456', role:'bakery', name:'Bakery Staff 2'},
+  'ADMIN': {pass:'admin123',  role:'admin',  name:'Admin'},
+};
+
+let CU=null,editId=null,curSec='kitchen',imgData=null;
+
+function getR(){try{return JSON.parse(localStorage.getItem('crm_v2')||'[]')}catch{return[]}}
+function setR(r){localStorage.setItem('crm_v2',JSON.stringify(r))}
+function uid(){return Date.now().toString(36)+Math.random().toString(36).slice(2)}
+
+function doLogin(){
+  const id=document.getElementById('lid').value.trim().toUpperCase();
+  const pass=document.getElementById('lpass').value;
+  const u=USERS[id];
+  if(!u||u.pass!==pass){toast('Wrong ID or password','e');return;}
+  CU={id,...u};
+  document.getElementById('login-screen').style.display='none';
+  document.getElementById('app').style.display='block';
+  setupApp();
+}
+function doLogout(){
+  CU=null;
+  document.getElementById('login-screen').style.display='flex';
+  document.getElementById('app').style.display='none';
+  document.getElementById('lid').value='';
+  document.getElementById('lpass').value='';
+}
+function setupApp(){
+  const rb=document.getElementById('rbadge');
+  rb.textContent=CU.role.toUpperCase();
+  rb.className='role-badge role-'+CU.role;
+  document.getElementById('uname').textContent=CU.name;
+  buildNav();renderAll();
+}
+function buildNav(){
+  const tabs=document.getElementById('nav-tabs');tabs.innerHTML='';
+  const pages=[];
+  if(CU.role==='kitchen'||CU.role==='admin') pages.push({id:'kitchen',label:'Kitchen',c:'kt'});
+  if(CU.role==='bakery' ||CU.role==='admin') pages.push({id:'bakery', label:'Bakery', c:'bt'});
+  if(CU.role==='admin') pages.push({id:'admin',label:'Admin Panel',c:'at'});
+  pages.forEach((p,i)=>{
+    const b=document.createElement('button');
+    b.className='nav-tab '+p.c+(i===0?' active':'');
+    b.textContent=p.label;b.dataset.page=p.id;
+    b.onclick=()=>switchPage(p.id);
+    tabs.appendChild(b);
+  });
+  if(pages.length) switchPage(pages[0].id,false);
+}
+function switchPage(id,rend=true){
+  document.querySelectorAll('.nav-tab').forEach(t=>t.classList.toggle('active',t.dataset.page===id));
+  document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
+  const pg=document.getElementById('page-'+id);if(pg)pg.classList.add('active');
+  if(rend)renderAll();
+}
+function renderAll(){renderGrid('kitchen');renderGrid('bakery');renderAdmin();}
+function renderGrid(sec,q=''){
+  const all=getR().filter(r=>r.section===sec);
+  const filtered=q?all.filter(r=>(r.name+' '+(r.category||'')).toLowerCase().includes(q.toLowerCase())):all;
+  const grid=document.getElementById('grid-'+sec);
+  const ce=document.getElementById(sec[0]+'c');if(ce)ce.textContent='('+all.length+')';
+  if(!filtered.length){
+    grid.innerHTML=`<div class="empty-state"><div class="empty-icon">${sec==='kitchen'?'🍳':'🥐'}</div><div class="empty-title">No ${sec} recipes yet</div><div style="font-size:13px;margin-top:4px">Add your first recipe to get started</div></div>`;
+    return;
+  }
+  grid.innerHTML=filtered.map(r=>`
+    <div class="recipe-card" onclick="viewR('${r.id}')">
+      <div class="card-img-wrap">
+        ${r.image?`<img src="${r.image}" alt="${r.name}"/>`:`<div class="card-icon">${sec==='kitchen'?'🍳':'🥐'}</div>`}
+      </div>
+      <div class="card-body">
+        <div class="card-name">${r.name}</div>
+        <div class="card-meta">${[r.prepTime&&'Prep: '+r.prepTime,r.cookTime&&'Cook: '+r.cookTime,r.yield&&'Yield: '+r.yield].filter(Boolean).join('<span style="color:var(--faint)">·</span>')}</div>
+        ${r.category?`<span class="card-tag t${sec[0]}">${r.category}</span>`:''}
+      </div>
+    </div>`).join('');
+}
+function renderAdmin(){
+  const all=getR();const kg=all.filter(r=>r.section==='kitchen');const bg=all.filter(r=>r.section==='bakery');
+  const sg=document.getElementById('sgrid');
+  if(sg)sg.innerHTML=`
+    <div class="stat-card"><div class="stat-lbl">Total Recipes</div><div class="stat-val">${all.length}</div></div>
+    <div class="stat-card"><div class="stat-lbl">Kitchen</div><div class="stat-val sv-k">${kg.length}</div></div>
+    <div class="stat-card"><div class="stat-lbl">Bakery</div><div class="stat-val sv-b">${bg.length}</div></div>`;
+  const al=document.getElementById('alist');if(!al)return;
+  if(!all.length){al.innerHTML='<div style="color:var(--muted);padding:20px;text-align:center;font-size:13px">No recipes yet</div>';return;}
+  al.innerHTML=all.map(r=>`
+    <div class="admin-row">
+      <div class="admin-thumb">${r.image?`<img src="${r.image}"/>`:(r.section==='kitchen'?'🍳':'🥐')}</div>
+      <div class="admin-info">
+        <div class="admin-name">${r.name}</div>
+        <div class="admin-by"><span class="card-tag t${r.section[0]}" style="margin-top:0;font-size:10px">${r.section}</span> &middot; ${r.addedBy||'Staff'}</div>
+      </div>
+      <button class="adel" onclick="delR('${r.id}',event)">Delete</button>
+    </div>`).join('');
+}
+function openAdd(sec){
+  curSec=sec;editId=null;imgData=null;
+  document.getElementById('modal-ttl').textContent='Add '+sec.charAt(0).toUpperCase()+sec.slice(1)+' Recipe';
+  document.getElementById('savebtn').className='btn-save'+(sec==='bakery'?' bk':'');
+  ['fn','fyield','fportion','fprep','fcook','fcost','fcat','fplating','fnotes'].forEach(id=>{const e=document.getElementById(id);if(e)e.value='';});
+  document.getElementById('imgprev').style.display='none';
+  document.getElementById('imglbl').textContent='Click or drag to upload dish photo';
+  document.getElementById('imgfile').value='';
+  document.getElementById('ibody').innerHTML='';
+  document.getElementById('slist').innerHTML='';
+  addIng();addIng();addIng();addStep();addStep();
+  document.getElementById('add-modal').classList.add('open');
+}
+function openEdit(id){
+  const r=getR().find(x=>x.id===id);if(!r)return;
+  curSec=r.section;editId=id;imgData=r.image||null;
+  document.getElementById('modal-ttl').textContent='Edit Recipe';
+  document.getElementById('savebtn').className='btn-save'+(r.section==='bakery'?' bk':'');
+  document.getElementById('fn').value=r.name||'';
+  document.getElementById('fyield').value=r.yield||'';
+  document.getElementById('fportion').value=r.portion||'';
+  document.getElementById('fprep').value=r.prepTime||'';
+  document.getElementById('fcook').value=r.cookTime||'';
+  document.getElementById('fcost').value=r.cost||'';
+  document.getElementById('fcat').value=r.category||'';
+  document.getElementById('fplating').value=r.plating||'';
+  document.getElementById('fnotes').value=r.notes||'';
+  if(r.image){document.getElementById('imgprev').src=r.image;document.getElementById('imgprev').style.display='block';document.getElementById('imglbl').textContent='Photo uploaded';}
+  else{document.getElementById('imgprev').style.display='none';document.getElementById('imglbl').textContent='Click or drag to upload dish photo';}
+  document.getElementById('ibody').innerHTML='';
+  (r.ingredients||[]).forEach(i=>addIng(i.name,i.qty,i.unit,i.note));
+  if(!(r.ingredients&&r.ingredients.length))addIng();
+  document.getElementById('slist').innerHTML='';
+  (r.steps||[]).forEach(s=>addStep(s));
+  if(!(r.steps&&r.steps.length))addStep();
+  closeM('view-modal');
+  document.getElementById('add-modal').classList.add('open');
+}
+function handleImg(inp){
+  const f=inp.files[0];if(!f)return;
+  const fr=new FileReader();
+  fr.onload=e=>{imgData=e.target.result;document.getElementById('imgprev').src=imgData;document.getElementById('imgprev').style.display='block';document.getElementById('imglbl').textContent='Photo uploaded';};
+  fr.readAsDataURL(f);
+}
+function addIng(n='',q='',u='',nt=''){
+  const tb=document.getElementById('ibody');const tr=document.createElement('tr');
+  tr.innerHTML=`<td><input class="ic" placeholder="Ingredient" value="${n}"/></td><td><input class="ic" placeholder="0" value="${q}" style="width:65px"/></td><td><input class="ic" placeholder="g/ml/pc" value="${u}"/></td><td><input class="ic" placeholder="—" value="${nt}"/></td><td><button class="del-r" onclick="this.closest('tr').remove()">×</button></td>`;
+  tb.appendChild(tr);
+}
+function addStep(t=''){
+  const sl=document.getElementById('slist');const d=document.createElement('div');d.className='step-item';
+  const n=sl.children.length+1;
+  d.innerHTML=`<div class="step-num">${n}</div><textarea class="step-ta" rows="1" placeholder="Describe this step..." oninput="this.style.height='auto';this.style.height=this.scrollHeight+'px';renum()">${t}</textarea><button class="del-r" onclick="this.parentElement.remove();renum()">×</button>`;
+  sl.appendChild(d);const ta=d.querySelector('textarea');ta.style.height='auto';ta.style.height=ta.scrollHeight+'px';
+}
+function renum(){document.querySelectorAll('.step-item').forEach((d,i)=>d.querySelector('.step-num').textContent=i+1);}
+function saveRecipe(){
+  const name=document.getElementById('fn').value.trim();
+  if(!name){toast('Recipe name is required','e');return;}
+  const ingredients=[];
+  document.querySelectorAll('#ibody tr').forEach(tr=>{
+    const ins=tr.querySelectorAll('input');
+    if(ins[0].value.trim())ingredients.push({name:ins[0].value,qty:ins[1].value,unit:ins[2].value,note:ins[3].value});
+  });
+  const steps=[];
+  document.querySelectorAll('#slist textarea').forEach(ta=>{if(ta.value.trim())steps.push(ta.value.trim());});
+  const rec={
+    id:editId||uid(),section:curSec,name,image:imgData||null,
+    yield:document.getElementById('fyield').value,
+    portion:document.getElementById('fportion').value,
+    prepTime:document.getElementById('fprep').value,
+    cookTime:document.getElementById('fcook').value,
+    cost:document.getElementById('fcost').value,
+    category:document.getElementById('fcat').value,
+    plating:document.getElementById('fplating').value,
+    notes:document.getElementById('fnotes').value,
+    ingredients,steps,addedBy:CU.name,
+    createdAt:editId?undefined:new Date().toISOString()
+  };
+  const all=getR();
+  if(editId){const i=all.findIndex(r=>r.id===editId);if(i>-1){rec.createdAt=all[i].createdAt;all[i]=rec;}}
+  else all.push(rec);
+  setR(all);closeM('add-modal');renderAll();toast(editId?'Recipe updated!':'Recipe saved!');
+}
+function delR(id,e){
+  if(e)e.stopPropagation();
+  if(!confirm('Delete this recipe?'))return;
+  setR(getR().filter(r=>r.id!==id));renderAll();closeM('view-modal');toast('Recipe deleted');
+}
+function viewR(id){
+  const r=getR().find(x=>x.id===id);if(!r)return;
+  document.getElementById('vttl').textContent=r.name;
+  document.getElementById('vbody').innerHTML=`
+    ${r.image?`<img class="det-img" src="${r.image}" style="display:block"/>`:''}
+    <div style="margin-bottom:12px"><span class="card-tag t${r.section[0]}">${r.section}</span>${r.category?`<span class="card-tag t${r.section[0]}" style="margin-left:6px">${r.category}</span>`:''}</div>
+    <div class="det-meta">
+      ${r.yield?`<div class="det-mc"><div class="det-ml">Yield</div><div class="det-mv">${r.yield}</div></div>`:''}
+      ${r.portion?`<div class="det-mc"><div class="det-ml">Portion</div><div class="det-mv">${r.portion}</div></div>`:''}
+      ${r.prepTime?`<div class="det-mc"><div class="det-ml">Prep</div><div class="det-mv">${r.prepTime}</div></div>`:''}
+      ${r.cookTime?`<div class="det-mc"><div class="det-ml">Cook</div><div class="det-mv">${r.cookTime}</div></div>`:''}
+      ${r.cost?`<div class="det-mc"><div class="det-ml">Cost/Portion</div><div class="det-mv">${r.cost}</div></div>`:''}
+    </div>
+    ${r.ingredients&&r.ingredients.length?`<div class="det-sec"><div class="det-sl">Ingredients</div><table class="det-ing"><thead><tr><th>Ingredient</th><th>Qty</th><th>Unit</th><th>Notes</th></tr></thead><tbody>${r.ingredients.map(i=>`<tr><td>${i.name}</td><td>${i.qty||'—'}</td><td>${i.unit||'—'}</td><td style="color:var(--muted)">${i.note||'—'}</td></tr>`).join('')}</tbody></table></div>`:''}
+    ${r.steps&&r.steps.length?`<div class="det-sec"><div class="det-sl">Preparation Method</div>${r.steps.map((s,i)=>`<div class="det-step"><div class="det-sn">${i+1}</div><div class="det-st">${s}</div></div>`).join('')}</div>`:''}
+    ${r.plating?`<div class="det-sec"><div class="det-sl">Plating & Presentation</div><div class="det-notes">${r.plating}</div></div>`:''}
+    ${r.notes?`<div class="det-sec"><div class="det-sl">Chef's Notes</div><div class="det-notes">${r.notes}</div></div>`:''}
+    <div class="ai-box">
+      <div class="ai-title">✦ Ask AI about this recipe</div>
+      <div class="ai-resp" id="ar-${id}">Ask anything — substitutions, scaling, allergens, plating tips...</div>
+      <div class="ai-row">
+        <input class="ai-in" id="aq-${id}" placeholder="e.g. How to scale this for 20 portions?" onkeydown="if(event.key==='Enter')askAI('${id}')"/>
+        <button class="ai-btn" onclick="askAI('${id}')">Ask AI</button>
+      </div>
+    </div>`;
+  document.getElementById('vfoot').innerHTML=`
+    <button class="btn-del" onclick="delR('${id}')">Delete</button>
+    <div style="flex:1"></div>
+    <button class="btn-sec" onclick="closeM('view-modal')">Close</button>
+    <button class="btn-save${r.section==='bakery'?' bk':''}" onclick="openEdit('${id}')">Edit Recipe</button>`;
+  document.getElementById('view-modal').classList.add('open');
+}
+async function askAI(rid){
+  const r=getR().find(x=>x.id===rid);if(!r)return;
+  const qe=document.getElementById('aq-'+rid);const re=document.getElementById('ar-'+rid);
+  const q=qe.value.trim();if(!q)return;
+  re.innerHTML='<span class="dot"></span>';qe.value='';
+  const ctx=`Recipe: ${r.name}\nSection: ${r.section}\nIngredients: ${(r.ingredients||[]).map(i=>`${i.name} ${i.qty}${i.unit}`).join(', ')}\nSteps: ${(r.steps||[]).join(' | ')}\nYield: ${r.yield||'N/A'} | Prep: ${r.prepTime||'N/A'} | Cook: ${r.cookTime||'N/A'}\nNotes: ${r.notes||'None'}`;
+  try{
+    const res=await fetch('https://api.anthropic.com/v1/messages',{
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({
+        model:'claude-sonnet-4-20250514',
+        max_tokens:600,
+        system:'You are a helpful culinary assistant for a cafe kitchen and bakery. Answer questions about recipes concisely, practically, and specifically.',
+        messages:[{role:'user',content:`${ctx}\n\nQuestion: ${q}`}]
+      })
+    });
+    const data=await res.json();
+    re.textContent=data.content?.[0]?.text||'Could not get a response.';
+  }catch(e){re.textContent='AI is unavailable. Please check that the API key is configured in the deployment environment.';}
+}
+function closeM(id){document.getElementById(id).classList.remove('open');}
+function toast(msg,type='s'){
+  const t=document.getElementById('toast');t.textContent=msg;
+  t.style.borderColor=type==='e'?'var(--danger)':'var(--success)';
+  t.style.color=type==='e'?'var(--danger)':'var(--success)';
+  t.classList.add('show');setTimeout(()=>t.classList.remove('show'),2500);
+}
+document.querySelectorAll('.modal-overlay').forEach(m=>{m.addEventListener('click',e=>{if(e.target===m)m.classList.remove('open');});});
+document.getElementById('lpass').addEventListener('keydown',e=>{if(e.key==='Enter')doLogin();});
+</script>
+</body>
+</html>
