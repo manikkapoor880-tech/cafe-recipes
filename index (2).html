@@ -1,0 +1,668 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<meta name="theme-color" content="#0f0e0d"/>
+<meta name="apple-mobile-web-app-capable" content="yes"/>
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent"/>
+<meta name="apple-mobile-web-app-title" content="Cafe Manager"/>
+<meta name="description" content="Cafe Recipe Manager for Kitchen and Bakery Staff"/>
+<link rel="manifest" href="manifest.json"/>
+<title>Cafe Manager</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"/>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@500;700&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet"/>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#0f0e0d;--surface:#1a1917;--surface2:#242220;--surface3:#2e2c29;
+  --border:rgba(255,255,255,0.07);--border2:rgba(255,255,255,0.13);
+  --text:#f0ede8;--muted:#9a9590;--faint:#4a4845;
+  --kitchen:#c8a96e;--kitchen-bg:rgba(200,169,110,0.1);--kitchen-border:rgba(200,169,110,0.25);
+  --bakery:#a8c4a0;--bakery-bg:rgba(168,196,160,0.1);--bakery-border:rgba(168,196,160,0.25);
+  --admin:#9db8d4;--admin-bg:rgba(157,184,212,0.1);
+  --danger:#d4706a;--success:#7ab87a;
+  --ff:'DM Sans',sans-serif;--fd:'Playfair Display',serif;
+  --r:12px;--rsm:8px;--rlg:16px;
+}
+body{font-family:var(--ff);background:var(--bg);color:var(--text);min-height:100vh;font-size:14px;line-height:1.6}
+#login-screen{min-height:100vh;display:flex;align-items:center;justify-content:center;padding:24px}
+.login-box{width:100%;max-width:380px;background:var(--surface);border:0.5px solid var(--border2);border-radius:var(--rlg);padding:40px 36px}
+.login-logo{font-family:var(--fd);font-size:26px;font-weight:700;margin-bottom:6px;letter-spacing:-0.5px}
+.login-sub{font-size:13px;color:var(--muted);margin-bottom:32px}
+.field{margin-bottom:16px}
+.field label{display:block;font-size:11px;font-weight:500;color:var(--muted);margin-bottom:6px;letter-spacing:0.05em;text-transform:uppercase}
+.field input{width:100%;background:var(--surface2);border:0.5px solid var(--border2);border-radius:var(--rsm);padding:10px 14px;font-size:14px;color:var(--text);font-family:var(--ff);outline:none;transition:border-color 0.15s}
+.field input:focus{border-color:var(--kitchen)}
+.btn-primary{width:100%;background:var(--kitchen);border:none;border-radius:var(--rsm);padding:11px;font-size:14px;font-weight:500;color:#0f0e0d;cursor:pointer;font-family:var(--ff);margin-top:8px;transition:opacity 0.15s}
+.btn-primary:hover{opacity:0.88}
+.btn-primary:disabled{opacity:0.5;cursor:not-allowed}
+#app{display:none;min-height:100vh}
+.topbar{display:flex;align-items:center;justify-content:space-between;padding:0 24px;height:56px;background:var(--surface);border-bottom:0.5px solid var(--border);position:sticky;top:0;z-index:100}
+.topbar-logo{font-family:var(--fd);font-size:18px;font-weight:700;letter-spacing:-0.3px}
+.topbar-right{display:flex;align-items:center;gap:12px}
+.role-badge{font-size:11px;font-weight:500;letter-spacing:0.06em;text-transform:uppercase;padding:4px 10px;border-radius:100px}
+.role-kitchen{background:var(--kitchen-bg);color:var(--kitchen);border:0.5px solid var(--kitchen-border)}
+.role-bakery{background:var(--bakery-bg);color:var(--bakery);border:0.5px solid var(--bakery-border)}
+.role-admin{background:var(--admin-bg);color:var(--admin);border:0.5px solid rgba(157,184,212,0.25)}
+.logout-btn{background:none;border:0.5px solid var(--border2);border-radius:var(--rsm);padding:6px 12px;font-size:12px;color:var(--muted);cursor:pointer;font-family:var(--ff);transition:all 0.15s}
+.logout-btn:hover{border-color:var(--danger);color:var(--danger)}
+.nav-tabs{display:flex;gap:2px;padding:16px 24px 0;border-bottom:0.5px solid var(--border)}
+.nav-tab{background:none;border:none;padding:10px 16px;font-size:13px;font-weight:500;color:var(--muted);cursor:pointer;font-family:var(--ff);border-bottom:2px solid transparent;margin-bottom:-0.5px;transition:all 0.15s}
+.nav-tab:hover{color:var(--text)}
+.nav-tab.active{color:var(--text)}
+.nav-tab.active.kt{border-bottom-color:var(--kitchen)}
+.nav-tab.active.bt{border-bottom-color:var(--bakery)}
+.nav-tab.active.at{border-bottom-color:var(--admin)}
+.main{padding:24px;max-width:1100px;margin:0 auto}
+.page{display:none}
+.page.active{display:block}
+.sec-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:20px}
+.sec-title{font-family:var(--fd);font-size:22px;font-weight:500}
+.sec-title span{font-size:13px;font-weight:400;font-family:var(--ff);color:var(--muted);margin-left:8px}
+.add-btn{display:flex;align-items:center;gap:6px;background:var(--kitchen);border:none;border-radius:var(--rsm);padding:9px 16px;font-size:13px;font-weight:500;color:#0f0e0d;cursor:pointer;font-family:var(--ff);transition:opacity 0.15s}
+.add-btn:hover{opacity:0.88}
+.add-btn.bk{background:var(--bakery)}
+.search-bar{margin-bottom:18px}
+.search-input{width:100%;max-width:360px;background:var(--surface);border:0.5px solid var(--border2);border-radius:var(--rsm);padding:9px 14px;font-size:13px;color:var(--text);font-family:var(--ff);outline:none;transition:border-color 0.15s}
+.search-input:focus{border-color:var(--kitchen)}
+.recipe-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(230px,1fr));gap:16px}
+.recipe-card{background:var(--surface);border:0.5px solid var(--border);border-radius:var(--rlg);overflow:hidden;cursor:pointer;transition:border-color 0.15s,transform 0.15s}
+.recipe-card:hover{border-color:var(--border2);transform:translateY(-2px)}
+.card-img-wrap{width:100%;height:180px;background:var(--surface2);display:flex;align-items:center;justify-content:center;overflow:hidden}
+.card-img-wrap img{width:100%;height:100%;object-fit:cover}
+.card-icon{font-size:36px;color:var(--faint)}
+.card-body{padding:14px}
+.card-name{font-family:var(--fd);font-size:15px;font-weight:500;margin-bottom:4px}
+.card-meta{font-size:12px;color:var(--muted);display:flex;gap:8px;flex-wrap:wrap}
+.card-tag{font-size:10px;padding:2px 8px;border-radius:100px;margin-top:8px;display:inline-block}
+.tk{background:var(--kitchen-bg);color:var(--kitchen)}
+.tb{background:var(--bakery-bg);color:var(--bakery)}
+.empty-state{grid-column:1/-1;text-align:center;padding:60px 24px;color:var(--muted)}
+.empty-icon{font-size:40px;margin-bottom:12px;opacity:0.4}
+.empty-title{font-size:16px;color:var(--text);margin-bottom:4px}
+.modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,0.72);z-index:200;display:none;align-items:flex-start;justify-content:center;padding:24px;overflow-y:auto}
+.modal-overlay.open{display:flex}
+.modal{background:var(--surface);border:0.5px solid var(--border2);border-radius:var(--rlg);width:100%;max-width:680px;margin:auto}
+.modal-head{display:flex;align-items:center;justify-content:space-between;padding:18px 22px;border-bottom:0.5px solid var(--border)}
+.modal-title{font-family:var(--fd);font-size:20px;font-weight:500}
+.modal-close{background:none;border:none;color:var(--muted);cursor:pointer;font-size:22px;line-height:1;padding:2px 6px}
+.modal-close:hover{color:var(--text)}
+.modal-body{padding:22px;max-height:72vh;overflow-y:auto}
+.modal-foot{padding:14px 22px;border-top:0.5px solid var(--border);display:flex;gap:10px;justify-content:flex-end;align-items:center}
+.form-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+.ff{margin-bottom:12px}
+.ff.full{grid-column:1/-1}
+.fl{display:block;font-size:11px;font-weight:500;color:var(--muted);margin-bottom:5px;letter-spacing:0.05em;text-transform:uppercase}
+.fi,.ft{width:100%;background:var(--surface2);border:0.5px solid var(--border2);border-radius:var(--rsm);padding:8px 11px;font-size:13px;color:var(--text);font-family:var(--ff);outline:none;transition:border-color 0.15s}
+.fi:focus,.ft:focus{border-color:var(--kitchen)}
+.ft{resize:vertical;min-height:76px;line-height:1.6}
+.img-zone{border:1.5px dashed var(--border2);border-radius:var(--r);padding:18px;text-align:center;cursor:pointer;transition:border-color 0.15s;position:relative;overflow:hidden}
+.img-zone:hover{border-color:var(--kitchen)}
+.img-zone input{position:absolute;inset:0;opacity:0;cursor:pointer;width:100%;height:100%}
+.img-prev{width:100%;max-height:200px;object-fit:cover;border-radius:var(--rsm);margin-top:10px;display:none}
+.img-lbl{font-size:13px;color:var(--muted);pointer-events:none}
+.ing-tbl{width:100%;border-collapse:collapse;margin-top:6px}
+.ing-tbl th{font-size:10px;font-weight:500;color:var(--muted);text-align:left;padding:3px 6px 7px;letter-spacing:0.05em;text-transform:uppercase}
+.ing-tbl td{padding:3px 3px}
+.ing-tbl tr+tr td{border-top:0.5px solid var(--border)}
+.ic{width:100%;background:var(--surface2);border:0.5px solid transparent;border-radius:6px;padding:6px 8px;font-size:13px;color:var(--text);font-family:var(--ff);outline:none;transition:border-color 0.15s}
+.ic:focus{border-color:var(--kitchen)}
+.del-r{background:none;border:none;color:var(--faint);cursor:pointer;font-size:16px;padding:3px 5px;border-radius:4px;transition:color 0.15s}
+.del-r:hover{color:var(--danger)}
+.add-row{display:flex;align-items:center;gap:5px;background:none;border:0.5px solid var(--border2);border-radius:var(--rsm);padding:5px 11px;font-size:12px;color:var(--muted);cursor:pointer;font-family:var(--ff);transition:all 0.15s;margin-top:7px}
+.add-row:hover{border-color:var(--kitchen);color:var(--kitchen)}
+.step-item{display:flex;gap:9px;align-items:flex-start;margin-bottom:7px}
+.step-num{width:22px;height:22px;border-radius:50%;background:var(--surface3);display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:500;color:var(--muted);flex-shrink:0;margin-top:7px}
+.step-ta{flex:1;background:var(--surface2);border:0.5px solid var(--border2);border-radius:var(--rsm);padding:7px 10px;font-size:13px;color:var(--text);font-family:var(--ff);outline:none;resize:none;min-height:36px;overflow:hidden;transition:border-color 0.15s;line-height:1.5}
+.step-ta:focus{border-color:var(--kitchen)}
+.btn-sec{background:none;border:0.5px solid var(--border2);border-radius:var(--rsm);padding:8px 16px;font-size:13px;font-weight:500;color:var(--text);cursor:pointer;font-family:var(--ff);transition:all 0.15s}
+.btn-sec:hover{background:var(--surface2)}
+.btn-save{background:var(--kitchen);border:none;border-radius:var(--rsm);padding:8px 20px;font-size:13px;font-weight:500;color:#0f0e0d;cursor:pointer;font-family:var(--ff);transition:opacity 0.15s}
+.btn-save:hover{opacity:0.88}
+.btn-save:disabled{opacity:0.5;cursor:not-allowed}
+.btn-save.bk{background:var(--bakery)}
+.btn-del{background:none;border:0.5px solid var(--danger);border-radius:var(--rsm);padding:7px 13px;font-size:12px;color:var(--danger);cursor:pointer;font-family:var(--ff);transition:all 0.15s}
+.btn-del:hover{background:rgba(212,112,106,0.1)}
+.det-img{width:100%;max-height:300px;object-fit:cover;border-radius:var(--r);margin-bottom:18px;display:none}
+.det-meta{display:grid;grid-template-columns:repeat(auto-fit,minmax(90px,1fr));gap:8px;margin-bottom:18px}
+.det-mc{background:var(--surface2);border-radius:var(--rsm);padding:9px 11px;text-align:center}
+.det-ml{font-size:10px;font-weight:500;color:var(--muted);letter-spacing:0.06em;text-transform:uppercase;margin-bottom:3px}
+.det-mv{font-size:13px;font-weight:500}
+.det-sec{margin-bottom:18px}
+.det-sl{font-size:10px;font-weight:500;color:var(--muted);letter-spacing:0.07em;text-transform:uppercase;margin-bottom:9px}
+.det-ing{width:100%;border-collapse:collapse;font-size:13px}
+.det-ing th{text-align:left;font-size:10px;color:var(--muted);padding:3px 8px 7px;letter-spacing:0.05em;text-transform:uppercase}
+.det-ing td{padding:6px 8px;border-top:0.5px solid var(--border)}
+.det-step{display:flex;gap:10px;margin-bottom:10px;align-items:flex-start}
+.det-sn{width:22px;height:22px;border-radius:50%;background:var(--surface3);display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:500;color:var(--muted);flex-shrink:0}
+.det-st{font-size:14px;line-height:1.6;padding-top:2px}
+.det-notes{background:var(--surface2);border-radius:var(--rsm);padding:13px;font-size:13px;line-height:1.7}
+.stats-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px;margin-bottom:26px}
+.stat-card{background:var(--surface);border:0.5px solid var(--border);border-radius:var(--r);padding:15px 17px}
+.stat-lbl{font-size:10px;font-weight:500;color:var(--muted);letter-spacing:0.06em;text-transform:uppercase;margin-bottom:5px}
+.stat-val{font-size:26px;font-weight:500;font-family:var(--fd)}
+.sv-k{color:var(--kitchen)}.sv-b{color:var(--bakery)}
+.admin-list{display:flex;flex-direction:column;gap:9px}
+.admin-row{display:flex;align-items:center;gap:13px;background:var(--surface);border:0.5px solid var(--border);border-radius:var(--r);padding:11px 15px}
+.admin-thumb{width:46px;height:46px;border-radius:8px;background:var(--surface2);flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:20px;color:var(--faint);overflow:hidden}
+.admin-thumb img{width:100%;height:100%;object-fit:cover}
+.admin-info{flex:1;min-width:0}
+.admin-name{font-weight:500;font-size:14px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.admin-by{font-size:11px;color:var(--muted);margin-top:2px}
+.adel{background:none;border:0.5px solid var(--border2);border-radius:var(--rsm);padding:5px 10px;font-size:11px;color:var(--muted);cursor:pointer;font-family:var(--ff);transition:all 0.15s}
+.adel:hover{border-color:var(--danger);color:var(--danger)}
+.loading{display:flex;align-items:center;justify-content:center;padding:60px;color:var(--muted);font-size:13px;gap:10px}
+.spinner{width:18px;height:18px;border:2px solid var(--border2);border-top-color:var(--kitchen);border-radius:50%;animation:spin 0.7s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+#toast{position:fixed;bottom:24px;right:24px;background:var(--surface2);border:0.5px solid var(--border2);border-radius:var(--rsm);padding:11px 17px;font-size:13px;z-index:500;opacity:0;transform:translateY(8px);transition:all 0.2s;pointer-events:none;max-width:300px}
+#toast.show{opacity:1;transform:translateY(0)}
+#install-banner{display:none;position:fixed;bottom:0;left:0;right:0;background:var(--surface);border-top:0.5px solid var(--border2);padding:14px 20px;z-index:300;align-items:center;justify-content:space-between;gap:12px}
+#install-banner.show{display:flex}
+.install-text{font-size:13px;color:var(--text)}
+.install-text span{color:var(--muted);font-size:12px;display:block;margin-top:2px}
+.install-btns{display:flex;gap:8px;flex-shrink:0}
+.inst-btn{background:var(--kitchen);border:none;border-radius:var(--rsm);padding:8px 14px;font-size:12px;font-weight:500;color:#0f0e0d;cursor:pointer;font-family:var(--ff)}
+.inst-dismiss{background:none;border:0.5px solid var(--border2);border-radius:var(--rsm);padding:8px 12px;font-size:12px;color:var(--muted);cursor:pointer;font-family:var(--ff)}
+</style>
+</head>
+<body>
+
+<div id="login-screen">
+  <div class="login-box">
+    <div class="login-logo">Cafe Manager</div>
+    <div class="login-sub">Staff Recipe System</div>
+    <div class="field"><label>Staff ID</label><input type="text" id="lid" placeholder="Enter your staff ID" autocomplete="off" autocapitalize="characters"/></div>
+    <div class="field"><label>Password</label><input type="password" id="lpass" placeholder="Enter password"/></div>
+    <button class="btn-primary" id="login-btn" onclick="doLogin()">Sign In</button>
+  </div>
+</div>
+
+<div id="app">
+  <div class="topbar">
+    <div class="topbar-logo">Cafe Manager</div>
+    <div class="topbar-right">
+      <span id="rbadge" class="role-badge"></span>
+      <span id="uname" style="font-size:13px;color:var(--muted)"></span>
+      <button class="logout-btn" onclick="doLogout()">Sign out</button>
+    </div>
+  </div>
+  <div class="nav-tabs" id="nav-tabs"></div>
+  <div class="main">
+    <div id="page-kitchen" class="page">
+      <div class="sec-header">
+        <div class="sec-title">Kitchen Recipes <span id="kc"></span></div>
+        <button class="add-btn" onclick="openAdd('kitchen')">+ Add Recipe</button>
+      </div>
+      <div class="search-bar"><input class="search-input" placeholder="Search kitchen recipes..." oninput="filterGrid('kitchen',this.value)"/></div>
+      <div id="grid-kitchen"></div>
+    </div>
+    <div id="page-bakery" class="page">
+      <div class="sec-header">
+        <div class="sec-title">Bakery Recipes <span id="bc"></span></div>
+        <button class="add-btn bk" onclick="openAdd('bakery')">+ Add Recipe</button>
+      </div>
+      <div class="search-bar"><input class="search-input" placeholder="Search bakery recipes..." oninput="filterGrid('bakery',this.value)"/></div>
+      <div id="grid-bakery"></div>
+    </div>
+    <div id="page-admin" class="page">
+      <div class="sec-header"><div class="sec-title">Admin Panel</div></div>
+      <div class="stats-grid" id="sgrid"></div>
+      <div style="font-family:var(--fd);font-size:17px;margin-bottom:13px">All Recipes</div>
+      <div class="admin-list" id="alist"></div>
+    </div>
+  </div>
+</div>
+
+<!-- ADD/EDIT MODAL -->
+<div class="modal-overlay" id="add-modal">
+  <div class="modal">
+    <div class="modal-head">
+      <div class="modal-title" id="modal-ttl">Add Recipe</div>
+      <button class="modal-close" onclick="closeM('add-modal')">×</button>
+    </div>
+    <div class="modal-body">
+      <div class="form-grid">
+        <div class="ff full"><label class="fl">Dish Name *</label><input class="fi" id="fn" placeholder="e.g. Chicken Tikka Masala"/></div>
+        <div class="ff full">
+          <label class="fl">Dish Photo</label>
+          <div class="img-zone">
+            <input type="file" accept="image/*" onchange="handleImg(this)" id="imgfile"/>
+            <div class="img-lbl" id="imglbl">Click or tap to upload dish photo</div>
+            <img class="img-prev" id="imgprev"/>
+          </div>
+        </div>
+        <div class="ff"><label class="fl">Yield</label><input class="fi" id="fyield" placeholder="e.g. 4 portions"/></div>
+        <div class="ff"><label class="fl">Portion Size</label><input class="fi" id="fportion" placeholder="e.g. 250g"/></div>
+        <div class="ff"><label class="fl">Prep Time</label><input class="fi" id="fprep" placeholder="e.g. 20 min"/></div>
+        <div class="ff"><label class="fl">Cook Time</label><input class="fi" id="fcook" placeholder="e.g. 35 min"/></div>
+        <div class="ff"><label class="fl">Cost / Portion</label><input class="fi" id="fcost" placeholder="e.g. Rs. 180"/></div>
+        <div class="ff"><label class="fl">Category</label><input class="fi" id="fcat" placeholder="e.g. Main Course"/></div>
+        <div class="ff full">
+          <label class="fl">Ingredients</label>
+          <table class="ing-tbl">
+            <thead><tr><th style="width:36%">Ingredient</th><th style="width:17%">Qty</th><th style="width:18%">Unit</th><th style="width:22%">Notes</th><th style="width:7%"></th></tr></thead>
+            <tbody id="ibody"></tbody>
+          </table>
+          <button class="add-row" onclick="addIng()">+ Add ingredient</button>
+        </div>
+        <div class="ff full">
+          <label class="fl">Preparation Steps</label>
+          <div id="slist"></div>
+          <button class="add-row" onclick="addStep()">+ Add step</button>
+        </div>
+        <div class="ff full"><label class="fl">Plating & Presentation</label><textarea class="ft" id="fplating" placeholder="How should this be plated and served?"></textarea></div>
+        <div class="ff full"><label class="fl">Chef's Notes</label><textarea class="ft" id="fnotes" placeholder="Storage, allergens, variations, quality standards..."></textarea></div>
+      </div>
+    </div>
+    <div class="modal-foot">
+      <button class="btn-sec" onclick="closeM('add-modal')">Cancel</button>
+      <button class="btn-save" id="savebtn" onclick="saveRecipe()">Save Recipe</button>
+    </div>
+  </div>
+</div>
+
+<!-- VIEW MODAL -->
+<div class="modal-overlay" id="view-modal">
+  <div class="modal" style="max-width:700px">
+    <div class="modal-head">
+      <div class="modal-title" id="vttl"></div>
+      <button class="modal-close" onclick="closeM('view-modal')">×</button>
+    </div>
+    <div class="modal-body" id="vbody"></div>
+    <div class="modal-foot" id="vfoot"></div>
+  </div>
+</div>
+
+<!-- PWA Install Banner -->
+<div id="install-banner">
+  <div class="install-text">
+    Install Cafe Manager
+    <span>Add to home screen for quick access</span>
+  </div>
+  <div class="install-btns">
+    <button class="inst-dismiss" onclick="dismissInstall()">Later</button>
+    <button class="inst-btn" onclick="installApp()">Install</button>
+  </div>
+</div>
+
+<div id="toast"></div>
+
+<script>
+// ─── SUPABASE INIT ───
+const SUPA_URL = 'https://nolsarlnexofgwtqyksm.supabase.co';
+const SUPA_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im5vbHNhcmxuZXhvZmd3dHF5a3NtIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODA0OTY5MzAsImV4cCI6MjA5NjA3MjkzMH0.pVJyAD915Mysq3-65CmzGZe5ArbmWN1no0VsFELheAE';
+const sb = supabase.createClient(SUPA_URL, SUPA_KEY);
+
+// Staff ID to email mapping
+const STAFF_MAP = {
+  'KID001': 'kid001@cafe.com',
+  'KID002': 'kid002@cafe.com',
+  'BID001': 'bid001@cafe.com',
+  'BID002': 'bid002@cafe.com',
+  'ADMIN':  'admin@cafe.com',
+};
+const STAFF_PASS = {
+  'KID001': 'kitchen123',
+  'KID002': 'kitchen456',
+  'BID001': 'bakery123',
+  'BID002': 'bakery456',
+  'ADMIN':  'admin123',
+};
+
+let CU = null, editId = null, curSec = 'kitchen', imgData = null;
+let allRecipes = { kitchen: [], bakery: [] };
+
+// ─── AUTH ───
+async function doLogin() {
+  const id = document.getElementById('lid').value.trim().toUpperCase();
+  const pass = document.getElementById('lpass').value;
+  const email = STAFF_MAP[id];
+  if (!email || STAFF_PASS[id] !== pass) { toast('Wrong ID or password', 'e'); return; }
+  const btn = document.getElementById('login-btn');
+  btn.disabled = true; btn.textContent = 'Signing in...';
+  try {
+    const { data, error } = await sb.auth.signInWithPassword({ email, password: pass });
+    if (error) throw error;
+    const { data: profile } = await sb.from('profiles').select('*').eq('id', data.user.id).single();
+    CU = { ...data.user, ...profile };
+    document.getElementById('login-screen').style.display = 'none';
+    document.getElementById('app').style.display = 'block';
+    setupApp();
+  } catch(e) {
+    // Fallback to local if supabase auth not set up yet
+    toast('Using offline mode', 's');
+    const roles = { KID001:'kitchen', KID002:'kitchen', BID001:'bakery', BID002:'bakery', ADMIN:'admin' };
+    const names = { KID001:'Kitchen Staff 1', KID002:'Kitchen Staff 2', BID001:'Bakery Staff 1', BID002:'Bakery Staff 2', ADMIN:'Admin' };
+    CU = { staff_id: id, role: roles[id], name: names[id] };
+    document.getElementById('login-screen').style.display = 'none';
+    document.getElementById('app').style.display = 'block';
+    setupApp();
+  } finally {
+    btn.disabled = false; btn.textContent = 'Sign In';
+  }
+}
+
+async function doLogout() {
+  await sb.auth.signOut();
+  CU = null;
+  document.getElementById('login-screen').style.display = 'flex';
+  document.getElementById('app').style.display = 'none';
+  document.getElementById('lid').value = '';
+  document.getElementById('lpass').value = '';
+}
+
+function setupApp() {
+  const rb = document.getElementById('rbadge');
+  rb.textContent = CU.role.toUpperCase();
+  rb.className = 'role-badge role-' + CU.role;
+  document.getElementById('uname').textContent = CU.name || CU.staff_id;
+  buildNav();
+  loadAllRecipes();
+}
+
+// ─── NAV ───
+function buildNav() {
+  const tabs = document.getElementById('nav-tabs'); tabs.innerHTML = '';
+  const pages = [];
+  if (CU.role === 'kitchen' || CU.role === 'admin') pages.push({ id: 'kitchen', label: 'Kitchen', c: 'kt' });
+  if (CU.role === 'bakery'  || CU.role === 'admin') pages.push({ id: 'bakery',  label: 'Bakery',  c: 'bt' });
+  if (CU.role === 'admin') pages.push({ id: 'admin', label: 'Admin Panel', c: 'at' });
+  pages.forEach((p, i) => {
+    const b = document.createElement('button');
+    b.className = 'nav-tab ' + p.c + (i === 0 ? ' active' : '');
+    b.textContent = p.label; b.dataset.page = p.id;
+    b.onclick = () => switchPage(p.id);
+    tabs.appendChild(b);
+  });
+  if (pages.length) switchPage(pages[0].id, false);
+}
+
+function switchPage(id, load = true) {
+  document.querySelectorAll('.nav-tab').forEach(t => t.classList.toggle('active', t.dataset.page === id));
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  const pg = document.getElementById('page-' + id); if (pg) pg.classList.add('active');
+  if (load) loadAllRecipes();
+}
+
+// ─── DATA ───
+async function loadAllRecipes() {
+  showLoading('kitchen'); showLoading('bakery');
+  try {
+    let query = sb.from('recipes').select('*').order('created_at', { ascending: false });
+    if (CU.role === 'kitchen') query = query.eq('section', 'kitchen');
+    if (CU.role === 'bakery')  query = query.eq('section', 'bakery');
+    const { data, error } = await query;
+    if (error) throw error;
+    allRecipes.kitchen = (data || []).filter(r => r.section === 'kitchen');
+    allRecipes.bakery  = (data || []).filter(r => r.section === 'bakery');
+  } catch(e) {
+    // fallback localStorage
+    const local = JSON.parse(localStorage.getItem('crm_v2') || '[]');
+    allRecipes.kitchen = local.filter(r => r.section === 'kitchen');
+    allRecipes.bakery  = local.filter(r => r.section === 'bakery');
+  }
+  renderGrid('kitchen'); renderGrid('bakery'); renderAdmin();
+}
+
+function showLoading(sec) {
+  document.getElementById('grid-' + sec).innerHTML = '<div class="loading"><div class="spinner"></div> Loading recipes...</div>';
+}
+
+function renderGrid(sec, q = '') {
+  const list = q ? allRecipes[sec].filter(r => (r.name + ' ' + (r.category || '')).toLowerCase().includes(q.toLowerCase())) : allRecipes[sec];
+  const grid = document.getElementById('grid-' + sec);
+  const ce = document.getElementById(sec[0] + 'c'); if (ce) ce.textContent = '(' + allRecipes[sec].length + ')';
+  if (!list.length) {
+    grid.innerHTML = `<div class="recipe-grid"><div class="empty-state"><div class="empty-icon">${sec === 'kitchen' ? '🍳' : '🥐'}</div><div class="empty-title">No ${sec} recipes yet</div><div style="font-size:13px;margin-top:4px">Add your first recipe!</div></div></div>`;
+    return;
+  }
+  grid.innerHTML = '<div class="recipe-grid">' + list.map(r => `
+    <div class="recipe-card" onclick="viewR('${r.id}')">
+      <div class="card-img-wrap">
+        ${r.image_url ? `<img src="${r.image_url}" alt="${r.name}"/>` : `<div class="card-icon">${sec === 'kitchen' ? '🍳' : '🥐'}</div>`}
+      </div>
+      <div class="card-body">
+        <div class="card-name">${r.name}</div>
+        <div class="card-meta">${[r.prep_time && 'Prep: ' + r.prep_time, r.cook_time && 'Cook: ' + r.cook_time, r.yield && 'Yield: ' + r.yield].filter(Boolean).join(' · ')}</div>
+        ${r.category ? `<span class="card-tag t${sec[0]}">${r.category}</span>` : ''}
+      </div>
+    </div>`).join('') + '</div>';
+}
+
+function filterGrid(sec, q) { renderGrid(sec, q); }
+
+function renderAdmin() {
+  const all = [...allRecipes.kitchen, ...allRecipes.bakery];
+  const sg = document.getElementById('sgrid');
+  if (sg) sg.innerHTML = `
+    <div class="stat-card"><div class="stat-lbl">Total Recipes</div><div class="stat-val">${all.length}</div></div>
+    <div class="stat-card"><div class="stat-lbl">Kitchen</div><div class="stat-val sv-k">${allRecipes.kitchen.length}</div></div>
+    <div class="stat-card"><div class="stat-lbl">Bakery</div><div class="stat-val sv-b">${allRecipes.bakery.length}</div></div>`;
+  const al = document.getElementById('alist'); if (!al) return;
+  if (!all.length) { al.innerHTML = '<div style="color:var(--muted);padding:20px;text-align:center;font-size:13px">No recipes yet</div>'; return; }
+  al.innerHTML = all.map(r => `
+    <div class="admin-row">
+      <div class="admin-thumb">${r.image_url ? `<img src="${r.image_url}"/>` : (r.section === 'kitchen' ? '🍳' : '🥐')}</div>
+      <div class="admin-info">
+        <div class="admin-name">${r.name}</div>
+        <div class="admin-by"><span class="card-tag t${r.section[0]}" style="margin-top:0">${r.section}</span> · ${r.added_by || 'Staff'}</div>
+      </div>
+      <button class="adel" onclick="delR('${r.id}','${r.section}',event)">Delete</button>
+    </div>`).join('');
+}
+
+// ─── ADD/EDIT ───
+function openAdd(sec) {
+  curSec = sec; editId = null; imgData = null;
+  document.getElementById('modal-ttl').textContent = 'Add ' + sec.charAt(0).toUpperCase() + sec.slice(1) + ' Recipe';
+  document.getElementById('savebtn').className = 'btn-save' + (sec === 'bakery' ? ' bk' : '');
+  ['fn','fyield','fportion','fprep','fcook','fcost','fcat','fplating','fnotes'].forEach(id => { const e = document.getElementById(id); if (e) e.value = ''; });
+  document.getElementById('imgprev').style.display = 'none';
+  document.getElementById('imglbl').textContent = 'Click or tap to upload dish photo';
+  document.getElementById('imgfile').value = '';
+  document.getElementById('ibody').innerHTML = '';
+  document.getElementById('slist').innerHTML = '';
+  addIng(); addIng(); addIng(); addStep(); addStep();
+  document.getElementById('add-modal').classList.add('open');
+}
+
+function openEdit(id) {
+  const r = [...allRecipes.kitchen, ...allRecipes.bakery].find(x => x.id === id); if (!r) return;
+  curSec = r.section; editId = id; imgData = null;
+  document.getElementById('modal-ttl').textContent = 'Edit Recipe';
+  document.getElementById('savebtn').className = 'btn-save' + (r.section === 'bakery' ? ' bk' : '');
+  document.getElementById('fn').value = r.name || '';
+  document.getElementById('fyield').value = r.yield || '';
+  document.getElementById('fportion').value = r.portion || '';
+  document.getElementById('fprep').value = r.prep_time || '';
+  document.getElementById('fcook').value = r.cook_time || '';
+  document.getElementById('fcost').value = r.cost || '';
+  document.getElementById('fcat').value = r.category || '';
+  document.getElementById('fplating').value = r.plating || '';
+  document.getElementById('fnotes').value = r.notes || '';
+  if (r.image_url) { document.getElementById('imgprev').src = r.image_url; document.getElementById('imgprev').style.display = 'block'; document.getElementById('imglbl').textContent = 'Photo uploaded'; }
+  else { document.getElementById('imgprev').style.display = 'none'; document.getElementById('imglbl').textContent = 'Click or tap to upload dish photo'; }
+  document.getElementById('ibody').innerHTML = '';
+  (r.ingredients || []).forEach(i => addIng(i.name, i.qty, i.unit, i.note));
+  if (!(r.ingredients && r.ingredients.length)) addIng();
+  document.getElementById('slist').innerHTML = '';
+  (r.steps || []).forEach(s => addStep(s));
+  if (!(r.steps && r.steps.length)) addStep();
+  closeM('view-modal');
+  document.getElementById('add-modal').classList.add('open');
+}
+
+function handleImg(inp) {
+  const f = inp.files[0]; if (!f) return;
+  // Compress image before storing
+  const reader = new FileReader();
+  reader.onload = e => {
+    const img = new Image();
+    img.onload = () => {
+      const canvas = document.createElement('canvas');
+      const MAX = 800;
+      let w = img.width, h = img.height;
+      if (w > MAX) { h = h * MAX / w; w = MAX; }
+      if (h > MAX) { w = w * MAX / h; h = MAX; }
+      canvas.width = w; canvas.height = h;
+      canvas.getContext('2d').drawImage(img, 0, 0, w, h);
+      imgData = canvas.toDataURL('image/jpeg', 0.75);
+      document.getElementById('imgprev').src = imgData;
+      document.getElementById('imgprev').style.display = 'block';
+      document.getElementById('imglbl').textContent = 'Photo uploaded ✓';
+    };
+    img.src = e.target.result;
+  };
+  reader.readAsDataURL(f);
+}
+
+function addIng(n = '', q = '', u = '', nt = '') {
+  const tb = document.getElementById('ibody'); const tr = document.createElement('tr');
+  tr.innerHTML = `<td><input class="ic" placeholder="Ingredient" value="${n}"/></td><td><input class="ic" placeholder="0" value="${q}" style="width:65px"/></td><td><input class="ic" placeholder="g/ml/pc" value="${u}"/></td><td><input class="ic" placeholder="—" value="${nt}"/></td><td><button class="del-r" onclick="this.closest('tr').remove()">×</button></td>`;
+  tb.appendChild(tr);
+}
+
+function addStep(t = '') {
+  const sl = document.getElementById('slist'); const d = document.createElement('div'); d.className = 'step-item';
+  const n = sl.children.length + 1;
+  d.innerHTML = `<div class="step-num">${n}</div><textarea class="step-ta" rows="1" placeholder="Describe this step..." oninput="this.style.height='auto';this.style.height=this.scrollHeight+'px';renum()">${t}</textarea><button class="del-r" onclick="this.parentElement.remove();renum()">×</button>`;
+  sl.appendChild(d); const ta = d.querySelector('textarea'); ta.style.height = 'auto'; ta.style.height = ta.scrollHeight + 'px';
+}
+
+function renum() { document.querySelectorAll('.step-item').forEach((d, i) => d.querySelector('.step-num').textContent = i + 1); }
+
+async function saveRecipe() {
+  const name = document.getElementById('fn').value.trim();
+  if (!name) { toast('Recipe name is required', 'e'); return; }
+  const ingredients = [];
+  document.querySelectorAll('#ibody tr').forEach(tr => {
+    const ins = tr.querySelectorAll('input');
+    if (ins[0].value.trim()) ingredients.push({ name: ins[0].value, qty: ins[1].value, unit: ins[2].value, note: ins[3].value });
+  });
+  const steps = [];
+  document.querySelectorAll('#slist textarea').forEach(ta => { if (ta.value.trim()) steps.push(ta.value.trim()); });
+
+  const btn = document.getElementById('savebtn');
+  btn.disabled = true; btn.textContent = 'Saving...';
+
+  const rec = {
+    section: curSec, name,
+    image_url: imgData || (editId ? [...allRecipes.kitchen, ...allRecipes.bakery].find(x => x.id === editId)?.image_url : null),
+    yield: document.getElementById('fyield').value,
+    portion: document.getElementById('fportion').value,
+    prep_time: document.getElementById('fprep').value,
+    cook_time: document.getElementById('fcook').value,
+    cost: document.getElementById('fcost').value,
+    category: document.getElementById('fcat').value,
+    plating: document.getElementById('fplating').value,
+    notes: document.getElementById('fnotes').value,
+    ingredients, steps,
+    added_by: CU.name || CU.staff_id,
+  };
+
+  try {
+    if (editId) {
+      const { error } = await sb.from('recipes').update(rec).eq('id', editId);
+      if (error) throw error;
+    } else {
+      const { error } = await sb.from('recipes').insert(rec);
+      if (error) throw error;
+    }
+    closeM('add-modal');
+    await loadAllRecipes();
+    toast(editId ? 'Recipe updated!' : 'Recipe saved!');
+  } catch(e) {
+    // fallback localStorage
+    const local = JSON.parse(localStorage.getItem('crm_v2') || '[]');
+    if (editId) {
+      const idx = local.findIndex(r => r.id === editId);
+      if (idx > -1) { rec.id = editId; rec.created_at = local[idx].created_at; local[idx] = rec; }
+    } else {
+      rec.id = Date.now().toString(36) + Math.random().toString(36).slice(2);
+      rec.created_at = new Date().toISOString();
+      local.push(rec);
+    }
+    localStorage.setItem('crm_v2', JSON.stringify(local));
+    allRecipes.kitchen = local.filter(r => r.section === 'kitchen');
+    allRecipes.bakery  = local.filter(r => r.section === 'bakery');
+    closeM('add-modal'); renderGrid('kitchen'); renderGrid('bakery'); renderAdmin();
+    toast(editId ? 'Recipe updated!' : 'Recipe saved!');
+  } finally {
+    btn.disabled = false; btn.textContent = 'Save Recipe';
+  }
+}
+
+async function delR(id, sec, e) {
+  if (e) e.stopPropagation();
+  if (!confirm('Delete this recipe?')) return;
+  try {
+    await sb.from('recipes').delete().eq('id', id);
+  } catch(err) {
+    const local = JSON.parse(localStorage.getItem('crm_v2') || '[]');
+    localStorage.setItem('crm_v2', JSON.stringify(local.filter(r => r.id !== id)));
+  }
+  await loadAllRecipes();
+  closeM('view-modal');
+  toast('Recipe deleted');
+}
+
+function viewR(id) {
+  const r = [...allRecipes.kitchen, ...allRecipes.bakery].find(x => x.id === id); if (!r) return;
+  document.getElementById('vttl').textContent = r.name;
+  document.getElementById('vbody').innerHTML = `
+    ${r.image_url ? `<img class="det-img" src="${r.image_url}" style="display:block"/>` : ''}
+    <div style="margin-bottom:12px"><span class="card-tag t${r.section[0]}">${r.section}</span>${r.category ? `<span class="card-tag t${r.section[0]}" style="margin-left:6px">${r.category}</span>` : ''}</div>
+    <div class="det-meta">
+      ${r.yield ? `<div class="det-mc"><div class="det-ml">Yield</div><div class="det-mv">${r.yield}</div></div>` : ''}
+      ${r.portion ? `<div class="det-mc"><div class="det-ml">Portion</div><div class="det-mv">${r.portion}</div></div>` : ''}
+      ${r.prep_time ? `<div class="det-mc"><div class="det-ml">Prep</div><div class="det-mv">${r.prep_time}</div></div>` : ''}
+      ${r.cook_time ? `<div class="det-mc"><div class="det-ml">Cook</div><div class="det-mv">${r.cook_time}</div></div>` : ''}
+      ${r.cost ? `<div class="det-mc"><div class="det-ml">Cost/Portion</div><div class="det-mv">${r.cost}</div></div>` : ''}
+    </div>
+    ${r.ingredients && r.ingredients.length ? `<div class="det-sec"><div class="det-sl">Ingredients</div><table class="det-ing"><thead><tr><th>Ingredient</th><th>Qty</th><th>Unit</th><th>Notes</th></tr></thead><tbody>${r.ingredients.map(i => `<tr><td>${i.name}</td><td>${i.qty || '—'}</td><td>${i.unit || '—'}</td><td style="color:var(--muted)">${i.note || '—'}</td></tr>`).join('')}</tbody></table></div>` : ''}
+    ${r.steps && r.steps.length ? `<div class="det-sec"><div class="det-sl">Preparation Method</div>${r.steps.map((s, i) => `<div class="det-step"><div class="det-sn">${i + 1}</div><div class="det-st">${s}</div></div>`).join('')}</div>` : ''}
+    ${r.plating ? `<div class="det-sec"><div class="det-sl">Plating & Presentation</div><div class="det-notes">${r.plating}</div></div>` : ''}
+    ${r.notes ? `<div class="det-sec"><div class="det-sl">Chef's Notes</div><div class="det-notes">${r.notes}</div></div>` : ''}`;
+  document.getElementById('vfoot').innerHTML = `
+    <button class="btn-del" onclick="delR('${id}','${r.section}')">Delete</button>
+    <div style="flex:1"></div>
+    <button class="btn-sec" onclick="closeM('view-modal')">Close</button>
+    <button class="btn-save${r.section === 'bakery' ? ' bk' : ''}" onclick="openEdit('${id}')">Edit Recipe</button>`;
+  document.getElementById('view-modal').classList.add('open');
+}
+
+function closeM(id) { document.getElementById(id).classList.remove('open'); }
+
+function toast(msg, type = 's') {
+  const t = document.getElementById('toast'); t.textContent = msg;
+  t.style.borderColor = type === 'e' ? 'var(--danger)' : 'var(--success)';
+  t.style.color = type === 'e' ? 'var(--danger)' : 'var(--success)';
+  t.classList.add('show'); setTimeout(() => t.classList.remove('show'), 2500);
+}
+
+// ─── PWA ───
+let deferredPrompt = null;
+window.addEventListener('beforeinstallprompt', e => {
+  e.preventDefault(); deferredPrompt = e;
+  if (!localStorage.getItem('pwa_dismissed')) {
+    document.getElementById('install-banner').classList.add('show');
+  }
+});
+function installApp() {
+  if (deferredPrompt) { deferredPrompt.prompt(); deferredPrompt.userChoice.then(() => { deferredPrompt = null; dismissInstall(); }); }
+}
+function dismissInstall() {
+  localStorage.setItem('pwa_dismissed', '1');
+  document.getElementById('install-banner').classList.remove('show');
+}
+if ('serviceWorker' in navigator) {
+  navigator.serviceWorker.register('/sw.js').catch(() => {});
+}
+
+document.querySelectorAll('.modal-overlay').forEach(m => { m.addEventListener('click', e => { if (e.target === m) m.classList.remove('open'); }); });
+document.getElementById('lpass').addEventListener('keydown', e => { if (e.key === 'Enter') doLogin(); });
+</script>
+</body>
+</html>
